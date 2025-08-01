@@ -7,9 +7,21 @@ const setExpiryToRecords = (records, days, type) => {
   const calc = new DataRetentionWindowCalculator();
 
   return records.map(record => {
-    const expiry = calc.getRetentionEndDate(days, type, record.created_at);
-    record.expires_at = expiry;
-    return record;
+    // Parse session without mutating the original record
+    const parsedSession = typeof record.session === 'string'
+      ? JSON.parse(record.session)
+      : record.session;
+
+    const expiry = calc.getRetentionEndDate(
+      parsedSession?.retention_days ?? days,
+      type,
+      record.created_at
+    );
+
+    return {
+      ...record,
+      expires_at: expiry
+    };
   });
 };
 
@@ -91,10 +103,10 @@ module.exports = (app, props) => {
   }
 
   app.post(`/${tableName}`, (req, res, next) => {
-    return model.create(req.body)
+    return model
+      .create(req.body)
       .then(result => {
         let records = result;
-
         if (dataRetentionInDays) {
           records = setExpiryToRecords(records, dataRetentionInDays, dataRetentionPeriodType);
         }

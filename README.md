@@ -56,10 +56,10 @@ Then run `yarn run db:local:migrate` to update your local database with the rele
 The application can be run on your local machine
 
 ## Creating a migration
-To create a new migration, go into the relevant service folder, i.e. `cd ./services/<service_name>`, ensure you have `npm i knex -g` and run:
+To create a new migration locally, go into the relevant service folder, i.e. `cd ./services/<service_name>`, ensure you have `npm i knex -g` and run:
 ```
 SERVICE_NAME=<service_name>
-knex migrate:make <migration_name>
+yarn db:local:make <migration_name>
 ```
 This will then create the new migration in the migrations folder of the service
 Then run

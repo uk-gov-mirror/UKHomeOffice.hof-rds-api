@@ -2,7 +2,6 @@
   {
     "tableName": "submitted_applications",
     "modelName": "postgres-model",
-    "additionalGetResources": ["submission_reference", "submitted_at"],
     "selectableProps": ["*"],
     "dataRetentionPeriodType": "calendar",
     "dataRetentionInDays": "730"

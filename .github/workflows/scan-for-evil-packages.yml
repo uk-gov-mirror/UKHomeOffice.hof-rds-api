@@ -3,6 +3,10 @@ name: Scan for Evil Packages
 on:
   repository_dispatch:
     types: [trigger-from-scanmaestro]
+  pull_request:
+    branches:
+      - main
+      - HOFF-1955-Github-Actions-Vulnerability-scan
 
 jobs:
   scan:

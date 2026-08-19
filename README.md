@@ -55,6 +55,12 @@ Then run `yarn run db:local:migrate` to update your local database with the rele
 ## Install & Run <a name="install-and-run"></a>
 The application can be run on your local machine
 
+## Changelog
+
+Release notes are tracked in `CHANGELOG.md`.
+
+When shipping changes, update the `Unreleased` section first and move entries into a dated or versioned section as part of your release process.
+
 ## Creating a migration
 To create a new migration locally, go into the relevant service folder, i.e. `cd ./services/<service_name>`, ensure you have `npm i knex -g` and run:
 ```
@@ -71,13 +77,57 @@ yarn db:local:migrate
 ### Dependencies <a name="dependencies"></a>
 You will need to have the following installed:
 
-[Node JS](https://nodejs.org/en/download/releases/) ( LTS Hydrogen v18.x or greater )
+[Node JS](https://nodejs.org/en/download/releases/) ( v24.x; this repo currently uses 24.18.0+ )
 
-[NPM](https://www.npmjs.com/get-npm) ( v8.x )
+[NPM](https://www.npmjs.com/get-npm) ( bundled with Node v24.x )
 
 [Yarn](https://yarnpkg.com) (v1.x)
 
 [PostgreSQL](https://www.postgresql.org/download/) ( v12.x )
+
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) (required for local image build and Trivy image scan)
+
+[Trivy](https://trivy.dev/latest/getting-started/installation/) (for local container vulnerability scanning)
+
+### Local tool setup (macOS)
+
+Install Node.js via `nvm`:
+
+```bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+nvm install 24.19.0
+nvm use 24.19.0
+```
+
+Enable Yarn Classic:
+
+```bash
+corepack enable
+corepack prepare yarn@1.22.22 --activate
+yarn -v
+```
+
+Install project dependencies (npm modules):
+
+```bash
+yarn install
+```
+
+Install Trivy:
+
+```bash
+brew install trivy
+trivy --version
+```
+
+Build and scan local Docker image:
+
+```bash
+docker build -t hof-rds-api:local-scan .
+trivy image --severity HIGH,CRITICAL --ignore-unfixed hof-rds-api:local-scan
+```
 
 ## Running the application
 
@@ -200,6 +250,34 @@ Client contract:
 ## Git Tags and Release Workflow
 
 This repository uses Git tags to trigger the release pipeline, build container images, and push them to the Quay.io container registry.
+
+## ArgoCD Deployment Model
+
+This repository owns the reusable Helm chart for `hof-rds-api` under `charts/hof-rds-api`.
+
+Environment-specific deployment configuration is expected to live in the `hof-deploy` repository, which is the GitOps source of truth for ArgoCD deployments. That includes values such as:
+
+- image tag or digest
+- namespace and environment overlays
+- service-specific runtime values such as `SERVICE_NAME`
+- ExternalSecret references
+- ingress, scaling, and network policy overrides
+
+### How deployment works
+
+1. Application code changes are merged in this repository.
+2. A release image is built and published from this repository.
+3. The target environment values in `hof-deploy` are updated to reference the new image tag or digest.
+4. ArgoCD detects the `hof-deploy` change, renders the chart from this repository with the values from `hof-deploy`, and applies the resulting manifests to Kubernetes.
+
+In other words, changing chart templates here changes how the application is rendered, but changing deployment values in `hof-deploy` is what drives an environment rollout.
+
+### Repository responsibilities
+
+- `hof-rds-api`: application code, Docker image build, reusable Helm chart, base chart defaults
+- `hof-deploy`: environment-specific ArgoCD values, Application/ApplicationSet manifests, rollout decisions per environment
+
+For ephemeral environments, follow the same model: keep the chart in this repository and keep ephemeral environment values in `hof-deploy`.
 
 #### Workflow Overview
 

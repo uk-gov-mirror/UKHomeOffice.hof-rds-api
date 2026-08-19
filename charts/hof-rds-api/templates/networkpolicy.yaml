@@ -1,0 +1,25 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "hof-rds-api.fullname" . }}
+  labels:
+    {{- include "hof-rds-api.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    {{- if .Values.networkPolicy.podSelectorLabels }}
+    matchLabels:
+      {{- toYaml .Values.networkPolicy.podSelectorLabels | nindent 6 }}
+    {{- else }}
+    matchLabels:
+      {{- include "hof-rds-api.selectorLabels" . | nindent 6 }}
+    {{- end }}
+  policyTypes:
+    {{- toYaml (.Values.networkPolicy.policyTypes | default (list "Ingress")) | nindent 4 }}
+  ingress:
+    {{- toYaml .Values.networkPolicy.ingress | nindent 4 }}
+  {{- if .Values.networkPolicy.egress }}
+  egress:
+    {{- toYaml .Values.networkPolicy.egress | nindent 4 }}
+  {{- end }}
+{{- end }}
